@@ -1,0 +1,27 @@
+[project]
+name = "devsecret"
+version = "0.1.0"
+description = "Secure CLI for API keys and recovery codes"
+requires-python = ">=3.10"
+dependencies = [
+    "cryptography>=42.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+]
+
+[project.scripts]
+devsecret = "devsecret.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["devsecret*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

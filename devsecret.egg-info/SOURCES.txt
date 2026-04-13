@@ -1,0 +1,13 @@
+pyproject.toml
+devsecret/__init__.py
+devsecret/__main__.py
+devsecret/cli.py
+devsecret/crypto.py
+devsecret/vault.py
+devsecret.egg-info/PKG-INFO
+devsecret.egg-info/SOURCES.txt
+devsecret.egg-info/dependency_links.txt
+devsecret.egg-info/entry_points.txt
+devsecret.egg-info/requires.txt
+devsecret.egg-info/top_level.txt
+tests/test_dummy_cases.py
