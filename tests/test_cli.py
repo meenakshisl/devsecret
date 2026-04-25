@@ -400,6 +400,22 @@ def test_cmd_configure_save_oserror_exits(tmp_vault: Path):
     assert exc.value.code == 1
 
 
+def test_parse_args_vault_after_subcommand(tmp_vault: Path):
+    parser = cli.build_parser()
+    args = parser.parse_args(
+        [
+            "add-key",
+            "--site",
+            DUMMY_SITE,
+            "--username",
+            DUMMY_USER,
+            "--vault",
+            str(tmp_vault),
+        ]
+    )
+    assert args.vault == str(tmp_vault)
+
+
 def test_build_parser_dispatches_init(tmp_vault: Path):
     parser = cli.build_parser()
     with patch("devsecret.cli.read_master_password", return_value=DUMMY_PASSWORD):

@@ -3,6 +3,8 @@ Name: devsecret
 Version: 0.1.0
 Summary: Secure CLI for API keys and recovery codes
 Requires-Python: >=3.10
+License-File: LICENSE
 Requires-Dist: cryptography>=42.0.0
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0.0; extra == "dev"
+Dynamic: license-file

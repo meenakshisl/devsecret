@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import getpass
 import os
+import shlex
 import sys
 from pathlib import Path
 
@@ -30,6 +31,16 @@ def resolve_vault_path(vault_arg: str | None) -> Path:
     if env:
         return Path(env).expanduser()
     return Path.home() / ".devsecret" / "vault.enc"
+
+
+def exit_vault_missing(path: Path) -> None:
+    print(f"Error: vault not found: {path}", file=sys.stderr)
+    print(
+        "Create it first, e.g. "
+        f"devsecret init --vault {shlex.quote(str(path))}",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
 
 def read_master_password() -> str:
@@ -121,8 +132,7 @@ def cmd_init(args: argparse.Namespace) -> None:
 def cmd_add_key(args: argparse.Namespace) -> None:
     path = resolve_vault_path(args.vault)
     if not path.is_file():
-        print(f"Error: vault not found: {path}", file=sys.stderr)
-        sys.exit(1)
+        exit_vault_missing(path)
     password = read_master_password()
     api_key = getpass.getpass("API key: ")
     if not api_key:
@@ -164,8 +174,7 @@ def cmd_add_key(args: argparse.Namespace) -> None:
 def cmd_add_recovery(args: argparse.Namespace) -> None:
     path = resolve_vault_path(args.vault)
     if not path.is_file():
-        print(f"Error: vault not found: {path}", file=sys.stderr)
-        sys.exit(1)
+        exit_vault_missing(path)
     codes = collect_recovery_codes(args.codes)
     password = read_master_password()
     try:
@@ -188,8 +197,7 @@ def cmd_add_recovery(args: argparse.Namespace) -> None:
 def cmd_list_keys(args: argparse.Namespace) -> None:
     path = resolve_vault_path(args.vault)
     if not path.is_file():
-        print(f"Error: vault not found: {path}", file=sys.stderr)
-        sys.exit(1)
+        exit_vault_missing(path)
     try:
         index = read_api_key_index(path)
     except VaultCryptoError as e:
@@ -209,8 +217,7 @@ def cmd_list_keys(args: argparse.Namespace) -> None:
 def cmd_list_recovery(args: argparse.Namespace) -> None:
     path = resolve_vault_path(args.vault)
     if not path.is_file():
-        print(f"Error: vault not found: {path}", file=sys.stderr)
-        sys.exit(1)
+        exit_vault_missing(path)
     password = read_master_password()
     try:
         data = load_vault_maybe_prune(path, password)
@@ -225,8 +232,7 @@ def cmd_list_recovery(args: argparse.Namespace) -> None:
 def cmd_get_key(args: argparse.Namespace) -> None:
     path = resolve_vault_path(args.vault)
     if not path.is_file():
-        print(f"Error: vault not found: {path}", file=sys.stderr)
-        sys.exit(1)
+        exit_vault_missing(path)
     password = read_master_password()
     try:
         data = load_vault_maybe_prune(path, password)
@@ -250,8 +256,7 @@ def cmd_get_key(args: argparse.Namespace) -> None:
 def cmd_get_recovery(args: argparse.Namespace) -> None:
     path = resolve_vault_path(args.vault)
     if not path.is_file():
-        print(f"Error: vault not found: {path}", file=sys.stderr)
-        sys.exit(1)
+        exit_vault_missing(path)
     password = read_master_password()
     try:
         data = load_vault_maybe_prune(path, password)
@@ -272,8 +277,7 @@ def cmd_get_recovery(args: argparse.Namespace) -> None:
 def cmd_configure(args: argparse.Namespace) -> None:
     path = resolve_vault_path(args.vault)
     if not path.is_file():
-        print(f"Error: vault not found: {path}", file=sys.stderr)
-        sys.exit(1)
+        exit_vault_missing(path)
     password = read_master_password()
     try:
         data = load(path, password)
@@ -300,6 +304,16 @@ def cmd_configure(args: argparse.Namespace) -> None:
         print(f"Removed {removed} expired API key entry/entries.", file=sys.stderr)
 
 
+def _add_vault_argument(parser: argparse.ArgumentParser) -> None:
+    """Repeatable --vault on subcommands; SUPPRESS avoids clobbering the root --vault."""
+    parser.add_argument(
+        "--vault",
+        default=argparse.SUPPRESS,
+        metavar="PATH",
+        help="Vault file (default: ~/.devsecret/vault.enc or DEVSECRET_VAULT)",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="devsecret",
@@ -314,6 +328,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("init", help="Create a new empty vault")
+    _add_vault_argument(p)
     p.add_argument(
         "--force",
         action="store_true",
@@ -322,6 +337,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_init)
 
     p = sub.add_parser("add-key", help="Store an API key")
+    _add_vault_argument(p)
     p.add_argument("--site", required=True)
     p.add_argument("--username", required=True)
     ex = p.add_mutually_exclusive_group()
@@ -339,6 +355,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_add_key)
 
     p = sub.add_parser("add-recovery", help="Store recovery codes (replaces existing)")
+    _add_vault_argument(p)
     p.add_argument("--site", required=True)
     p.add_argument("--username", required=True)
     p.add_argument(
@@ -354,17 +371,21 @@ def build_parser() -> argparse.ArgumentParser:
         "list-keys",
         help="List site/username for API keys (metadata only; uses plaintext sidecar index)",
     )
+    _add_vault_argument(p)
     p.set_defaults(func=cmd_list_keys)
 
     p = sub.add_parser("list-recovery", help="List site/username for recovery codes")
+    _add_vault_argument(p)
     p.set_defaults(func=cmd_list_recovery)
 
     p = sub.add_parser("get-key", help="Print API key (and expiry on stderr)")
+    _add_vault_argument(p)
     p.add_argument("--site", required=True)
     p.add_argument("--username", required=True)
     p.set_defaults(func=cmd_get_key)
 
     p = sub.add_parser("get-recovery", help="Print recovery codes")
+    _add_vault_argument(p)
     p.add_argument("--site", required=True)
     p.add_argument("--username", required=True)
     p.set_defaults(func=cmd_get_recovery)
@@ -373,6 +394,7 @@ def build_parser() -> argparse.ArgumentParser:
         "configure",
         help="Vault options (API keys only): auto-delete expired keys after load/save",
     )
+    _add_vault_argument(p)
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument(
         "--enable-auto-delete-expired-api-keys",

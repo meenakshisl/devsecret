@@ -1,3 +1,5 @@
+LICENSE
+README.md
 pyproject.toml
 devsecret/__init__.py
 devsecret/__main__.py
@@ -10,4 +12,6 @@ devsecret.egg-info/dependency_links.txt
 devsecret.egg-info/entry_points.txt
 devsecret.egg-info/requires.txt
 devsecret.egg-info/top_level.txt
-tests/test_dummy_cases.py
+tests/test_cli.py
+tests/test_crypto.py
+tests/test_vault.py
