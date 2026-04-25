@@ -56,6 +56,13 @@ devsecret list-keys
 devsecret list-keys --vault ~/.config/devsecret/prod.enc
 ```
 
+**`list-recovery`** — site and username for each recovery entry (decrypts the vault; master password required):
+
+```bash
+devsecret list-recovery
+devsecret list-recovery --vault ~/.config/devsecret/prod.enc
+```
+
 **`get-key`** — prints the secret to **stdout**; expiry warnings / expiry line go to **stderr**:
 
 ```bash
